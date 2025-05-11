@@ -1,0 +1,22 @@
+# Allow all crawlers to index public content
+User-agent: *
+Allow: /
+Allow: /blog
+Allow: /projects
+Allow: /security
+Allow: /blog/*.html
+Allow: /projects/*.html
+
+# Disallow crawling of sensitive pages and API routes
+Disallow: /admin/
+Disallow: /api/
+Disallow: /*.json$
+Disallow: /*_buildManifest.js$
+Disallow: /*_ssgManifest.js$
+Disallow: /*_middlewareManifest.js$
+
+# Sitemap location
+Sitemap: https://vedanttapdiya.com/sitemap.xml
+
+# Crawl delay to prevent overwhelming the server
+Crawl-delay: 10
