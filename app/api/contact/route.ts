@@ -1,108 +1,124 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { validateInput, sanitizeInput } from "@/lib/form-validation"
-import { sendContactFormEmail } from "@/lib/email-service"
+import { Resend } from "resend"
+import { validateInput } from "@/lib/form-validation"
 
-// Cloudflare Turnstile verification endpoint
-const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+// Initialize Resend with API key
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: NextRequest) {
   try {
+    // Get the origin of the request
+    const origin = request.headers.get("origin") || "Unknown origin"
+    console.log("[SERVER]\nContact form submission from:", origin)
+
     // Parse the request body
     const body = await request.json()
     const { firstName, lastName, email, message, csrfToken, turnstileToken } = body
 
-    // Verify Turnstile token
+    // Validate required fields
+    if (!firstName || !lastName || !email || !message || !csrfToken) {
+      return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
+    }
+
+    // Validate Turnstile token
     if (!turnstileToken) {
       return NextResponse.json({ success: false, message: "Turnstile verification required" }, { status: 400 })
     }
 
-    // Get the secret key from environment variables
-    const secretKey = process.env.TURNSTILE_SECRET_KEY
+    // Verify the Turnstile token
+    console.log("[SERVER]\nSending verification request to Cloudflare Turnstile")
 
-    // Check if the secret key is available
-    if (!secretKey) {
-      console.error("TURNSTILE_SECRET_KEY environment variable is not set")
-      return NextResponse.json(
-        { success: false, message: "Server configuration error: Missing secret key" },
-        { status: 500 },
-      )
-    }
-
-    // Verify the token with Cloudflare Turnstile
-    const formData = new URLSearchParams()
-    formData.append("secret", secretKey)
-    formData.append("response", turnstileToken)
-    formData.append("remoteip", request.headers.get("x-forwarded-for") || "")
-
-    const turnstileResponse = await fetch(TURNSTILE_VERIFY_URL, {
+    const verificationResponse = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",
-      body: formData,
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        secret: process.env.TURNSTILE_SECRET_KEY,
+        response: turnstileToken,
+      }),
     })
 
-    const turnstileData = await turnstileResponse.json()
+    const verificationResult = await verificationResponse.json()
 
-    if (!turnstileData.success) {
-      console.error("Turnstile verification failed:", turnstileData["error-codes"])
+    // Log the verification result (without sensitive data)
+    console.log("[SERVER]\nTurnstile verification response:", JSON.stringify(verificationResult))
+
+    if (!verificationResult.success) {
       return NextResponse.json(
-        { success: false, message: "Human verification failed", errors: turnstileData["error-codes"] },
+        {
+          success: false,
+          message: "Turnstile verification failed",
+          details: verificationResult["error-codes"]?.join(", "),
+        },
         { status: 400 },
       )
     }
 
-    // Validate inputs
-    const errors: { [key: string]: string } = {}
-
-    // Validate first name
+    // Validate input fields
     const firstNameValidation = validateInput(firstName, "text")
-    if (!firstNameValidation.isValid) {
-      errors.firstName = firstNameValidation.error || "First name is required"
-    }
-
-    // Validate last name
     const lastNameValidation = validateInput(lastName, "text")
-    if (!lastNameValidation.isValid) {
-      errors.lastName = lastNameValidation.error || "Last name is required"
-    }
-
-    // Validate email
     const emailValidation = validateInput(email, "email")
-    if (!emailValidation.isValid) {
-      errors.email = emailValidation.error || "Valid email is required"
-    }
-
-    // Validate message
     const messageValidation = validateInput(message, "message")
-    if (!messageValidation.isValid) {
-      errors.message = messageValidation.error || "Message is required"
+
+    if (
+      !firstNameValidation.isValid ||
+      !lastNameValidation.isValid ||
+      !emailValidation.isValid ||
+      !messageValidation.isValid
+    ) {
+      return NextResponse.json({ success: false, message: "Invalid input data" }, { status: 400 })
     }
 
-    // Return validation errors if any
-    if (Object.keys(errors).length > 0) {
-      return NextResponse.json({ success: false, errors }, { status: 400 })
-    }
+    // Prepare email content
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #1e293b; color: white; padding: 20px; border-radius: 5px 5px 0 0; }
+            .content { padding: 20px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px; }
+            .footer { margin-top: 20px; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h2>New Contact Form Submission</h2>
+            </div>
+            <div class="content">
+              <p><strong>Name:</strong> ${firstName} ${lastName}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Message:</strong></p>
+              <p>${message.replace(/\n/g, "<br>")}</p>
+            </div>
+            <div class="footer">
+              <p>This email was sent from the contact form on your portfolio website.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
 
-    // Sanitize inputs
-    const sanitizedData = {
-      firstName: sanitizeInput(firstName),
-      lastName: sanitizeInput(lastName),
-      email: sanitizeInput(email),
-      message: sanitizeInput(message),
-    }
-
-    // Send the email
-    const result = await sendContactFormEmail(sanitizedData)
-
-    // Return success response
-    return NextResponse.json({
-      success: true,
-      message: "Email sent successfully",
-      id: result.id,
+    // Send email using Resend
+    const { data, error } = await resend.emails.send({
+      from: "webmaster@vedanttapdiya.me",
+      to: "contact@vedanttapdiya.me",
+      subject: `Contact Form: ${firstName} ${lastName}`,
+      html: htmlContent,
+      reply_to: email,
     })
+
+    if (error) {
+      console.error("Error sending email:", error)
+      return NextResponse.json({ success: false, message: "Failed to send email" }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true, data })
   } catch (error) {
-    console.error("Server error:", error)
+    console.error("Error processing contact form:", error)
     return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
   }
 }

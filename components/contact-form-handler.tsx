@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { validateInput } from "@/lib/form-validation"
 import { Turnstile } from "@/components/turnstile"
+import { AlertCircle } from "lucide-react"
 
 interface ContactFormHandlerProps {
   className?: string
@@ -23,6 +24,7 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
   const [csrfToken, setCsrfToken] = useState("")
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [showTurnstile, setShowTurnstile] = useState(false)
+  const [verificationError, setVerificationError] = useState<string | null>(null)
 
   // Generate CSRF token on component mount
   useState(() => {
@@ -64,13 +66,14 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setVerificationError(null)
 
     // Validate form
     if (!validateForm()) {
       return
     }
 
-    // Show Turnstile if form is valid
+    // Show Turnstile if form is valid and we don't have a token yet
     if (!turnstileToken) {
       setShowTurnstile(true)
       return
@@ -84,6 +87,10 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
     setTurnstileToken(token)
     // Automatically submit the form after verification
     submitForm(token)
+  }
+
+  const handleTurnstileError = (error?: string) => {
+    setVerificationError(`Turnstile error: ${error || "Unknown error"}`)
   }
 
   const submitForm = async (token: string = turnstileToken!) => {
@@ -218,11 +225,24 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
       {showTurnstile && !turnstileToken && (
         <div className="flex flex-col items-center justify-center py-4 border border-zinc-800 rounded-md bg-zinc-900/50">
           <p className="text-sm text-zinc-400 mb-4">Please verify you're human:</p>
-          <Turnstile onVerify={handleTurnstileVerify} className="mx-auto" />
+          <Turnstile
+            onVerify={handleTurnstileVerify}
+            onError={handleTurnstileError}
+            className="mx-auto"
+            debugMode={false}
+          />
+
+          {verificationError && (
+            <div className="flex items-center gap-2 text-red-500 text-sm mt-4 p-2 border border-red-300 rounded bg-red-50 dark:bg-red-950 dark:border-red-800">
+              <AlertCircle className="h-4 w-4" />
+              <p>{verificationError}</p>
+            </div>
+          )}
         </div>
       )}
 
       <input type="hidden" name="csrf_token" value={csrfToken} />
+
       <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isSubmitting}>
         {isSubmitting ? (
           <div className="flex items-center justify-center">

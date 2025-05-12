@@ -1,50 +1,50 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-// Cloudflare Turnstile verification endpoint
-const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
-
 export async function POST(request: NextRequest) {
   try {
-    const { token } = await request.json()
+    const body = await request.json()
+    const { token, contactId } = body
 
     if (!token) {
-      return NextResponse.json({ success: false, message: "Token is required" }, { status: 400 })
+      return NextResponse.json({ success: false, message: "Turnstile token is required" }, { status: 400 })
     }
 
     // Get the secret key from environment variables
     const secretKey = process.env.TURNSTILE_SECRET_KEY
 
-    // Check if the secret key is available
     if (!secretKey) {
-      console.error("TURNSTILE_SECRET_KEY environment variable is not set")
-      return NextResponse.json(
-        { success: false, message: "Server configuration error: Missing secret key" },
-        { status: 500 },
-      )
+      console.error("Turnstile secret key is not configured")
+      return NextResponse.json({ success: false, message: "Server configuration error" }, { status: 500 })
     }
 
     // Verify the token with Cloudflare Turnstile
-    const formData = new URLSearchParams()
-    formData.append("secret", secretKey)
-    formData.append("response", token)
-    formData.append("remoteip", request.headers.get("x-forwarded-for") || "")
+    console.log("[SERVER]\nSending verification request to Cloudflare Turnstile")
 
-    const result = await fetch(TURNSTILE_VERIFY_URL, {
+    const verificationResponse = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",
-      body: formData,
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        secret: secretKey,
+        response: token,
+      }),
     })
 
-    const data = await result.json()
+    const verificationResult = await verificationResponse.json()
 
-    if (data.success) {
+    // Log the verification result (without sensitive data)
+    console.log("[SERVER]\nTurnstile verification response:", JSON.stringify(verificationResult))
+
+    if (verificationResult.success) {
       return NextResponse.json({ success: true })
     } else {
-      console.error("Turnstile verification failed:", data["error-codes"])
       return NextResponse.json(
-        { success: false, message: "Verification failed", errors: data["error-codes"] },
+        {
+          success: false,
+          message: "Turnstile verification failed",
+          details: verificationResult["error-codes"]?.join(", "),
+        },
         { status: 400 },
       )
     }
