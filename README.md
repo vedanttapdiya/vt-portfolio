@@ -2,28 +2,6 @@
 
 A modern, secure portfolio website showcasing cybersecurity skills and projects.
 
-## Features
-
-- **Security Demonstrations**: Interactive security demos and visualizations
-- **Project Showcase**: Detailed project case studies with technical information
-- **Blog**: Technical articles on cybersecurity topics
-- **Contact Form**: Secure contact form with multiple security measures
-- **Visitor Analytics**: Anonymous visitor tracking and analytics
-- **Admin Dashboard**: Visualize visitor data and security metrics
-
-## Security Features
-
-This portfolio implements numerous security features:
-
-- **Input Validation & Sanitization**: Prevents injection attacks
-- **XSS Protection**: Real-time detection and prevention
-- **CSRF Protection**: Token-based cross-site request forgery protection
-- **Rate Limiting**: Prevents abuse and brute force attacks
-- **Content Security Policy**: Restricts resource loading
-- **Security Headers**: Implements recommended security headers
-- **Email Obfuscation**: Prevents email harvesting
-- **Visitor Tracking**: Anonymous analytics with privacy focus
-
 ## Getting Started
 
 ### Prerequisites
@@ -104,4 +82,4 @@ DATABASE_URL=your_database_url
 This project is licensed under the MIT License - see the LICENSE file for details.
 \`\`\`
 
-Let's update the visitor tracking API route:
+
