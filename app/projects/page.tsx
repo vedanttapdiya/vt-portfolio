@@ -1,13 +1,13 @@
 import Link from "next/link"
-import { ArrowLeft, ArrowRight, FileDigit, Lock, Brain, Shield, Code, Database, Search } from "lucide-react"
+import { ArrowLeft, ArrowRight, Lock, FileDigit, Brain, Shield, Code, Database, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Breadcrumbs } from "@/components/breadcrumbs"
 
 export default function ProjectsPage() {
-  // Sample projects data
-  const projects = [
+  // Sample projects data - keeping all projects in the data but will filter for display
+  const allProjects = [
     {
       id: 1,
       title: "Blockchain-Based Facial Sign-On (FSO) Library",
@@ -16,6 +16,7 @@ export default function ProjectsPage() {
       icon: <Lock className="h-6 w-6 text-green-500" />,
       tags: ["Python", "TensorFlow", "Solidity", "Ethereum", "Flask"],
       slug: "blockchain-fso",
+      hidden: false,
     },
     {
       id: 2,
@@ -25,6 +26,7 @@ export default function ProjectsPage() {
       icon: <FileDigit className="h-6 w-6 text-green-500" />,
       tags: ["Python", "WinAPI", "Libpcap", "OpenSSL"],
       slug: "ramhound",
+      hidden: false,
     },
     {
       id: 3,
@@ -34,6 +36,7 @@ export default function ProjectsPage() {
       icon: <Brain className="h-6 w-6 text-green-500" />,
       tags: ["Python", "NLTK", "Tweepy", "Pandas", "Matplotlib"],
       slug: "twitter-sentiment",
+      hidden: false,
     },
     {
       id: 4,
@@ -43,6 +46,7 @@ export default function ProjectsPage() {
       icon: <Shield className="h-6 w-6 text-green-500" />,
       tags: ["Python", "Scapy", "TensorFlow", "Pandas", "Flask"],
       slug: "network-analyzer",
+      hidden: true, // Hidden as requested
     },
     {
       id: 5,
@@ -52,6 +56,7 @@ export default function ProjectsPage() {
       icon: <Lock className="h-6 w-6 text-green-500" />,
       tags: ["C++", "OpenSSL", "Qt", "SQLite"],
       slug: "secure-encryption",
+      hidden: true, // Hidden as requested
     },
     {
       id: 6,
@@ -61,6 +66,7 @@ export default function ProjectsPage() {
       icon: <Code className="h-6 w-6 text-green-500" />,
       tags: ["Python", "YARA", "Machine Learning", "Flask"],
       slug: "yara-generator",
+      hidden: true, // Hidden as requested
     },
     {
       id: 7,
@@ -70,6 +76,7 @@ export default function ProjectsPage() {
       icon: <Database className="h-6 w-6 text-green-500" />,
       tags: ["Node.js", "MongoDB", "Express", "Docker"],
       slug: "vulnerability-db",
+      hidden: true, // Hidden as requested
     },
     {
       id: 8,
@@ -79,8 +86,12 @@ export default function ProjectsPage() {
       icon: <Search className="h-6 w-6 text-green-500" />,
       tags: ["Python", "Selenium", "BeautifulSoup", "MongoDB", "FastAPI"],
       slug: "osint-framework",
+      hidden: true, // Hidden as requested
     },
   ]
+
+  // Filter out hidden projects
+  const visibleProjects = allProjects.filter((project) => !project.hidden)
 
   return (
     <div className="flex min-h-screen flex-col bg-black">
@@ -114,7 +125,7 @@ export default function ProjectsPage() {
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
+            {visibleProjects.map((project) => (
               <Card
                 key={project.id}
                 className="bg-zinc-900 border-green-600/20 text-white h-full overflow-hidden group"

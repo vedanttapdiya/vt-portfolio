@@ -8,8 +8,30 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Cybersecurity Portfolio",
-  description: "A showcase of cybersecurity skills and projects",
+  title: "Vedant Tapdiya | Cybersecurity Professional & SOC Analyst",
+  description:
+    "Aspiring Security Operations Center (SOC) Analyst with expertise in cybersecurity, threat detection, incident response, digital forensics, and security monitoring.",
+  keywords:
+    "SOC Analyst, Cybersecurity, Security Operations, Threat Detection, Incident Response, Security Monitoring, SIEM, Security Researcher, Digital Forensics, Vedant Tapdiya",
+  authors: [{ name: "Vedant Tapdiya" }],
+  creator: "Vedant Tapdiya",
+  openGraph: {
+    title: "Vedant Tapdiya | SOC Analyst Portfolio",
+    description:
+      "Aspiring Security Operations Center (SOC) Analyst with expertise in cybersecurity, threat detection, incident response, digital forensics, and security monitoring.",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vedant Tapdiya | SOC Analyst Portfolio",
+    description:
+      "Aspiring Security Operations Center (SOC) Analyst with expertise in cybersecurity, threat detection, incident response, digital forensics, and security monitoring.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
     generator: 'v0.dev'
 }
 
@@ -20,6 +42,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="canonical" href="https://vedanttapdiya.me" />
+      </head>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           {children}

@@ -165,11 +165,11 @@ export default function Home() {
                       sequence={[
                         "Cybersecurity Professional",
                         2000,
-                        "Digital Forensics Analyst",
-                        2000,
-                        "Security Operations Specialist",
+                        "Aspiring Security Operations Specialist",
                         2000,
                         "Incident Response Analyst",
+                        2000,
+                        "Digital Forensics Trainee",
                         2000,
                       ]}
                       wrapper="p"
