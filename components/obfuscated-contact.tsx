@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { Copy, Check, Lock, AlertCircle, RefreshCw } from "lucide-react"
+import { useState } from "react"
+import { Copy, Check, Lock, AlertCircle } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { Turnstile } from "@/components/turnstile"
 import {
@@ -30,8 +30,6 @@ export function ObfuscatedContact({ type, value, className = "", id = "default" 
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [verificationError, setVerificationError] = useState<string | null>(null)
-  const [turnstileInstanceId, setTurnstileInstanceId] = useState<string>(`${type}-${id}-${Date.now()}`)
-  const verificationInProgress = useRef(false)
 
   // Format the phone number for display
   const formatPhoneNumber = (phone: string): string => {
@@ -63,26 +61,11 @@ export function ObfuscatedContact({ type, value, className = "", id = "default" 
   }
 
   const handleRevealRequest = () => {
-    if (revealed) {
-      // If already revealed, no need to verify again
-      return
-    }
-
-    // Generate a new instance ID to force a fresh Turnstile widget
-    setTurnstileInstanceId(`${type}-${id}-${Date.now()}`)
     setDialogOpen(true)
     setVerificationError(null)
-    setTurnstileToken(null)
-    verificationInProgress.current = false
   }
 
   const handleVerify = async (token: string) => {
-    // Prevent duplicate verification requests
-    if (verificationInProgress.current) {
-      return
-    }
-
-    verificationInProgress.current = true
     setTurnstileToken(token)
     setIsVerifying(true)
     setVerificationError(null)
@@ -94,11 +77,7 @@ export function ObfuscatedContact({ type, value, className = "", id = "default" 
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          token,
-          contactId: id,
-          contactType: type,
-        }),
+        body: JSON.stringify({ token, contactId: id }),
       })
 
       const data = await response.json()
@@ -131,20 +110,11 @@ export function ObfuscatedContact({ type, value, className = "", id = "default" 
       })
     } finally {
       setIsVerifying(false)
-      verificationInProgress.current = false
     }
   }
 
   const handleTurnstileError = (error?: string) => {
     setVerificationError(`Turnstile error: ${error || "Unknown error"}`)
-    verificationInProgress.current = false
-  }
-
-  const resetTurnstile = () => {
-    // Generate a new instance ID to force a fresh Turnstile widget
-    setTurnstileInstanceId(`${type}-${id}-${Date.now()}`)
-    setVerificationError(null)
-    verificationInProgress.current = false
   }
 
   const handleCopy = () => {
@@ -188,18 +158,7 @@ export function ObfuscatedContact({ type, value, className = "", id = "default" 
 
   return (
     <div className="flex items-center gap-2">
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open)
-          if (!open) {
-            // Reset state when dialog is closed
-            setTurnstileToken(null)
-            setVerificationError(null)
-            verificationInProgress.current = false
-          }
-        }}
-      >
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogTrigger asChild>
           <button
             onClick={handleRevealRequest}
@@ -225,42 +184,16 @@ export function ObfuscatedContact({ type, value, className = "", id = "default" 
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center justify-center py-4">
-            <Turnstile
-              instanceId={turnstileInstanceId}
-              onVerify={handleVerify}
-              onError={handleTurnstileError}
-              className="mx-auto"
-              debugMode={false}
-            />
+            <Turnstile onVerify={handleVerify} onError={handleTurnstileError} className="mx-auto" debugMode={false} />
 
             {verificationError && (
-              <div className="flex items-center gap-2 text-red-500 text-sm mt-4 p-2 border border-red-300 rounded bg-red-950 border-red-800">
+              <div className="flex items-center gap-2 text-red-500 text-sm mt-4 p-2 border border-red-300 rounded bg-red-50 dark:bg-red-950 dark:border-red-800">
                 <AlertCircle className="h-4 w-4" />
                 <p>{verificationError}</p>
-                <Button variant="ghost" size="icon" className="h-6 w-6 ml-2" onClick={resetTurnstile} title="Try again">
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
               </div>
             )}
 
-            {isVerifying && (
-              <div className="flex items-center text-zinc-400 text-sm mt-2">
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-zinc-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Verifying...
-              </div>
-            )}
+            {isVerifying && <p className="text-zinc-400 text-sm mt-2">Verifying...</p>}
           </div>
 
           <DialogFooter className="flex justify-between items-center">

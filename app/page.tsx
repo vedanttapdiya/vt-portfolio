@@ -258,6 +258,7 @@ export default function Home() {
               className="flex flex-col items-center justify-center space-y-4 text-center"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
               <div className="space-y-2">
@@ -343,6 +344,7 @@ export default function Home() {
               className="flex flex-col items-center justify-center space-y-4 text-center"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
               <div className="space-y-2">
