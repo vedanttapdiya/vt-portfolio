@@ -22,7 +22,7 @@ const nextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "frame-ancestors 'self'; default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://challenges.cloudflare.com https://api.resend.com; font-src 'self'; frame-src https://challenges.cloudflare.com;",
+            value: "frame-ancestors 'self'",
           },
           {
             key: "Strict-Transport-Security",
@@ -32,18 +32,10 @@ const nextConfig = {
             key: "X-Content-Type-Options",
             value: "nosniff",
           },
-          {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
-          },
-          {
-            key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
-          },
         ],
       },
     ]
   },
 }
 
-export default nextConfig
+module.exports = nextConfig
