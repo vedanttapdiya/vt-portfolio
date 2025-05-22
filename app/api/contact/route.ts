@@ -198,3 +198,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
   }
 }
+
+// Handle unsupported methods
+export async function GET() {
+  return methodNotAllowed()
+}
+
+export async function PUT() {
+  return methodNotAllowed()
+}
+
+export async function DELETE() {
+  return methodNotAllowed()
+}
+
+export async function PATCH() {
+  return methodNotAllowed()
+}
+
+// Helper function for method not allowed response
+function methodNotAllowed() {
+  return NextResponse.json(
+    { error: "Method not allowed", message: "This endpoint only supports POST requests" },
+    { status: 405, headers: { Allow: "POST" } },
+  )
+}

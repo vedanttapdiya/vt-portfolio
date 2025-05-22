@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { validateInput } from "@/lib/form-validation"
@@ -28,6 +28,7 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
   const [showTurnstile, setShowTurnstile] = useState(false)
   const [verificationError, setVerificationError] = useState<string | null>(null)
   const [turnstileInstanceId, setTurnstileInstanceId] = useState<string>(`contact-form-${Date.now()}`)
+  const submissionInProgress = useRef(false)
 
   const validateForm = () => {
     // Reset errors
@@ -63,6 +64,12 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Prevent duplicate submissions
+    if (submissionInProgress.current) {
+      return
+    }
+
     setVerificationError(null)
 
     // Validate form
@@ -88,15 +95,23 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
 
   const handleTurnstileError = (error?: string) => {
     setVerificationError(`Turnstile error: ${error || "Unknown error"}`)
+    submissionInProgress.current = false
   }
 
   const resetTurnstile = () => {
     // Generate a new instance ID to force a fresh Turnstile widget
     setTurnstileInstanceId(`contact-form-${Date.now()}`)
     setVerificationError(null)
+    submissionInProgress.current = false
   }
 
   const submitForm = async (token: string = turnstileToken!) => {
+    // Prevent duplicate submissions
+    if (submissionInProgress.current || isSubmitting) {
+      return
+    }
+
+    submissionInProgress.current = true
     setIsSubmitting(true)
 
     try {
@@ -153,6 +168,7 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
       })
     } finally {
       setIsSubmitting(false)
+      submissionInProgress.current = false
     }
   }
 
@@ -252,7 +268,11 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
         </div>
       )}
 
-      <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isSubmitting}>
+      <Button
+        type="submit"
+        className="w-full bg-green-600 hover:bg-green-700 text-white"
+        disabled={isSubmitting || submissionInProgress.current}
+      >
         {isSubmitting ? (
           <div className="flex items-center justify-center">
             <svg

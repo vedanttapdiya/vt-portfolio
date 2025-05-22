@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Copy, Check, Lock, AlertCircle, RefreshCw } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { Turnstile } from "@/components/turnstile"
@@ -31,6 +31,7 @@ export function ObfuscatedContact({ type, value, className = "", id = "default" 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [verificationError, setVerificationError] = useState<string | null>(null)
   const [turnstileInstanceId, setTurnstileInstanceId] = useState<string>(`${type}-${id}-${Date.now()}`)
+  const verificationInProgress = useRef(false)
 
   // Format the phone number for display
   const formatPhoneNumber = (phone: string): string => {
@@ -72,9 +73,16 @@ export function ObfuscatedContact({ type, value, className = "", id = "default" 
     setDialogOpen(true)
     setVerificationError(null)
     setTurnstileToken(null)
+    verificationInProgress.current = false
   }
 
   const handleVerify = async (token: string) => {
+    // Prevent duplicate verification requests
+    if (verificationInProgress.current) {
+      return
+    }
+
+    verificationInProgress.current = true
     setTurnstileToken(token)
     setIsVerifying(true)
     setVerificationError(null)
@@ -123,17 +131,20 @@ export function ObfuscatedContact({ type, value, className = "", id = "default" 
       })
     } finally {
       setIsVerifying(false)
+      verificationInProgress.current = false
     }
   }
 
   const handleTurnstileError = (error?: string) => {
     setVerificationError(`Turnstile error: ${error || "Unknown error"}`)
+    verificationInProgress.current = false
   }
 
   const resetTurnstile = () => {
     // Generate a new instance ID to force a fresh Turnstile widget
     setTurnstileInstanceId(`${type}-${id}-${Date.now()}`)
     setVerificationError(null)
+    verificationInProgress.current = false
   }
 
   const handleCopy = () => {
@@ -185,6 +196,7 @@ export function ObfuscatedContact({ type, value, className = "", id = "default" 
             // Reset state when dialog is closed
             setTurnstileToken(null)
             setVerificationError(null)
+            verificationInProgress.current = false
           }
         }}
       >

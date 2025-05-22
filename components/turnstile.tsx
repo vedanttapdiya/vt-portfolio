@@ -27,6 +27,16 @@ export function Turnstile({
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [renderAttempt, setRenderAttempt] = useState(0)
+  const verifyCallbackRef = useRef(onVerify)
+  const errorCallbackRef = useRef(onError)
+  const expireCallbackRef = useRef(onExpire)
+
+  // Update callback refs when props change
+  useEffect(() => {
+    verifyCallbackRef.current = onVerify
+    errorCallbackRef.current = onError
+    expireCallbackRef.current = onExpire
+  }, [onVerify, onError, onExpire])
 
   // Generate a unique ID for this instance
   const uniqueId = `turnstile-${instanceId}-${renderAttempt}`
@@ -57,23 +67,23 @@ export function Turnstile({
         // Render the widget
         const newWidgetId = await renderTurnstileWidget(containerRef.current, {
           callback: (token) => {
-            if (mounted) {
-              onVerify(token)
+            if (mounted && verifyCallbackRef.current) {
+              verifyCallbackRef.current(token)
             }
           },
           "error-callback": (errorMsg) => {
             if (mounted) {
               const errorMessage = errorMsg || "An error occurred with Turnstile"
               setError(errorMessage)
-              if (onError) onError(errorMessage)
+              if (errorCallbackRef.current) errorCallbackRef.current(errorMessage)
               if (debugMode) {
                 console.error("Turnstile error:", errorMessage)
               }
             }
           },
           "expired-callback": () => {
-            if (mounted && onExpire) {
-              onExpire()
+            if (mounted && expireCallbackRef.current) {
+              expireCallbackRef.current()
             }
           },
           widgetId: uniqueId,
@@ -94,7 +104,7 @@ export function Turnstile({
           setError(errorMessage)
           setIsLoading(false)
 
-          if (onError) onError(errorMessage)
+          if (errorCallbackRef.current) errorCallbackRef.current(errorMessage)
           if (debugMode) {
             console.error("Turnstile initialization error:", err)
           }
@@ -126,7 +136,7 @@ export function Turnstile({
         removeTurnstileWidget(widgetId)
       }
     }
-  }, [siteKey, onVerify, onError, onExpire, debugMode, renderAttempt, uniqueId, isLoading])
+  }, [siteKey, debugMode, renderAttempt, uniqueId, isLoading])
 
   // Force re-render if container becomes available after initial render
   useEffect(() => {
