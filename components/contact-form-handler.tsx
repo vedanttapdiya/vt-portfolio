@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { validateInput } from "@/lib/form-validation"
 import { Turnstile } from "@/components/turnstile"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, RefreshCw } from "lucide-react"
+import DOMPurify from "dompurify"
+import { v4 as uuidv4 } from "uuid"
 
 interface ContactFormHandlerProps {
   className?: string
@@ -21,16 +23,11 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
   const [message, setMessage] = useState("")
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [csrfToken, setCsrfToken] = useState("")
+  const [csrfToken, setCsrfToken] = useState(() => uuidv4())
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [showTurnstile, setShowTurnstile] = useState(false)
   const [verificationError, setVerificationError] = useState<string | null>(null)
-
-  // Generate CSRF token on component mount
-  useState(() => {
-    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-    setCsrfToken(token)
-  })
+  const [turnstileInstanceId, setTurnstileInstanceId] = useState<string>(`contact-form-${Date.now()}`)
 
   const validateForm = () => {
     // Reset errors
@@ -93,6 +90,12 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
     setVerificationError(`Turnstile error: ${error || "Unknown error"}`)
   }
 
+  const resetTurnstile = () => {
+    // Generate a new instance ID to force a fresh Turnstile widget
+    setTurnstileInstanceId(`contact-form-${Date.now()}`)
+    setVerificationError(null)
+  }
+
   const submitForm = async (token: string = turnstileToken!) => {
     setIsSubmitting(true)
 
@@ -122,9 +125,13 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
         throw new Error(data.message || "Failed to send message")
       }
 
+      // Sanitize user input before displaying it
+      const sanitizedFirstName = DOMPurify.sanitize(firstName)
+      const sanitizedLastName = DOMPurify.sanitize(lastName)
+
       toast({
         title: "Message sent successfully!",
-        description: "Thank you for reaching out. I'll get back to you soon.",
+        description: `Thank you, ${sanitizedFirstName} ${sanitizedLastName}. We'll get back to you soon.`,
       })
 
       // Reset form
@@ -136,8 +143,7 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
       setShowTurnstile(false)
 
       // Generate new CSRF token for next submission
-      const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-      setCsrfToken(newToken)
+      setCsrfToken(uuidv4())
     } catch (error) {
       console.error("Error sending message:", error)
       toast({
@@ -152,6 +158,7 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
 
   return (
     <form onSubmit={handleSubmit} className={`space-y-4 ${className}`}>
+      <input type="hidden" name="csrfToken" value={csrfToken} />
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <label htmlFor="firstName" className="text-sm font-medium text-white">
@@ -226,6 +233,7 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
         <div className="flex flex-col items-center justify-center py-4 border border-zinc-800 rounded-md bg-zinc-900/50">
           <p className="text-sm text-zinc-400 mb-4">Please verify you're human:</p>
           <Turnstile
+            instanceId={turnstileInstanceId}
             onVerify={handleTurnstileVerify}
             onError={handleTurnstileError}
             className="mx-auto"
@@ -233,15 +241,16 @@ export function ContactFormHandler({ className = "" }: ContactFormHandlerProps) 
           />
 
           {verificationError && (
-            <div className="flex items-center gap-2 text-red-500 text-sm mt-4 p-2 border border-red-300 rounded bg-red-50 dark:bg-red-950 dark:border-red-800">
+            <div className="flex items-center gap-2 text-red-500 text-sm mt-4 p-2 border border-red-300 rounded bg-red-950 border-red-800">
               <AlertCircle className="h-4 w-4" />
               <p>{verificationError}</p>
+              <Button variant="ghost" size="icon" className="h-6 w-6 ml-2" onClick={resetTurnstile} title="Try again">
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </div>
           )}
         </div>
       )}
-
-      <input type="hidden" name="csrf_token" value={csrfToken} />
 
       <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white" disabled={isSubmitting}>
         {isSubmitting ? (
