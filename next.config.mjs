@@ -40,7 +40,28 @@ const nextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
+          {
+            key: "Upgrade-Insecure-Requests",
+            value: "1",
+          },
         ],
+      },
+    ]
+  },
+  // Add redirects for HTTP to HTTPS at the Next.js config level as well
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'header',
+            key: 'x-forwarded-proto',
+            value: 'http',
+          },
+        ],
+        permanent: true,
+        destination: 'https://:host/:path*',
       },
     ]
   },
