@@ -25,19 +25,5 @@
         }
       ]
     }
-  ],
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "has": [
-        {
-          "type": "header",
-          "key": "x-forwarded-proto",
-          "value": "http"
-        }
-      ],
-      "permanent": true,
-      "destination": "https://$host/$1"
-    }
   ]
 }
